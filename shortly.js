@@ -2,7 +2,7 @@ var express = require('express');
 var util = require('./lib/utility');
 var partials = require('express-partials');
 var bodyParser = require('body-parser');
-
+var session = require('express-session');
 
 var db = require('./app/config');
 var Users = require('./app/collections/users');
@@ -22,21 +22,37 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static(__dirname + '/public'));
 
+app.use(session({secret: 'a secret'}));
+
+// function restrict(req, res, next) {
+//   if (req.session.user) {
+//     next();
+//   } else {
+//     req.session.error = 'Access denied!';
+//     res.redirect('/login');
+//   }
+// }
 
 app.get('/',
 function(req, res) {
-  res.render('index');
+  restrict(req, res, function(){
+    res.render('index');
+  });
 });
 
 app.get('/create',
 function(req, res) {
-  res.render('index');
+  restrict(req, res, function(){
+    res.render('index');
+  });
 });
 
 app.get('/links',
 function(req, res) {
-  Links.reset().fetch().then(function(links) {
-    res.status(200).send(links.models);
+  restrict(req, res, function(){
+    Links.reset().fetch().then(function(links) {
+      res.status(200).send(links.models);
+    });
   });
 });
 
@@ -90,7 +106,9 @@ app.post('/signup', function(req, res) {
     password: password
   })
   .then(function(newUser) {
-    res.status(200).send(newUser); // TODO: proper redirect
+    req.session.user = username;  // TODO: Increase security
+    // And then send user to create page
+    res.redirect('/');
   });
 
 });
@@ -102,21 +120,20 @@ app.get('/login', function(req, res) {
 app.post('/login', function(req, res) {
   var username = req.body.username;
   var password = req.body.password;
-
   // Lookup username & its password in users table
   new User({'username': username}).fetch().then( function(model) {
     // If username was not found in the table,
     if ( null === model ) {
       // Send user to signup page with username filled in
-      res.render('signup');
+      res.redirect('/login');
     } else {
       var expectedPassword = model.get('password');
       // Verify that entered password matches users password
       // If yes match,
       if ( expectedPassword === password ) {
-        // begin a session
+        req.session.user = username;  // TODO: Increase security
         // And then send user to create page
-        res.render('index');
+        res.redirect('/');
       // If no password match,
       } else {
         // reload login page
@@ -125,6 +142,15 @@ app.post('/login', function(req, res) {
     }
   });
 });
+
+function restrict(req, res, next) {
+  if (req.session.user) {
+    next();
+  } else {
+    req.session.error = 'Access denied!';
+    res.redirect('/login');
+  }
+}
 
 /************************************************************/
 // Handle the wildcard route last - if all other routes fail
