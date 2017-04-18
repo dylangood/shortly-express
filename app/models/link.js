@@ -11,9 +11,9 @@ var Link = db.Model.extend({
   user: function() {
     return this.belongsTo(User, 'user');
   },
-  clicks: function() {
-    return this.hasMany(Click);
-  },
+  // clicks: function() {
+  //   return this.hasMany(Click);
+  // },
   initialize: function() {
     this.on('creating', function(model, attrs, options) {
       var shasum = crypto.createHash('sha1');
