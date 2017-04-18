@@ -84,6 +84,14 @@ app.post('/signup', function(req, res) {
   var username = req.body.username;
   var password = req.body.password;
 
+  // TODO: Uniqueness logic
+  Users.create({
+    username: username,
+    password: password
+  })
+  .then(function(newUser) {
+    res.status(200).send(newUser); // TODO: proper redirect
+  });
 
 });
 
@@ -95,7 +103,27 @@ app.post('/login', function(req, res) {
   var username = req.body.username;
   var password = req.body.password;
 
-
+  // Lookup username & its password in users table
+  new User({'username': username}).fetch().then( function(model) {
+    // If username was not found in the table,
+    if ( null === model ) {
+      // Send user to signup page with username filled in
+      res.render('signup');
+    } else {
+      var expectedPassword = model.get('password');
+      // Verify that entered password matches users password
+      // If yes match,
+      if ( expectedPassword === password ) {
+        // begin a session
+        // And then send user to create page
+        res.render('index');
+      // If no password match,
+      } else {
+        // reload login page
+        res.render('login');
+      }
+    }
+  });
 });
 
 /************************************************************/
