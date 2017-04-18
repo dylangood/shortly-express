@@ -24,20 +24,26 @@ app.use(express.static(__dirname + '/public'));
 
 app.use(session({secret: 'a secret'}));
 
-// function restrict(req, res, next) {
-//   if (req.session.user) {
-//     next();
-//   } else {
-//     req.session.error = 'Access denied!';
-//     res.redirect('/login');
-//   }
-// }
+function restrict(req, res, next) {
+  if (req.session.user) {
+    next();
+  } else {
+    req.session.error = 'Access denied!';
+    res.redirect('/login');
+  }
+}
 
 app.get('/',
 function(req, res) {
   restrict(req, res, function(){
     res.render('index');
   });
+});
+
+app.get('/logout',
+function(req, res) {
+  req.session.destroy();
+  res.redirect('/login');
 });
 
 app.get('/create',
@@ -142,15 +148,6 @@ app.post('/login', function(req, res) {
     }
   });
 });
-
-function restrict(req, res, next) {
-  if (req.session.user) {
-    next();
-  } else {
-    req.session.error = 'Access denied!';
-    res.redirect('/login');
-  }
-}
 
 /************************************************************/
 // Handle the wildcard route last - if all other routes fail
